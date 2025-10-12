@@ -5,9 +5,6 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-# macOS
-.DS_Store
-
 ### STS ###
 .apt_generated
 .classpath
@@ -41,3 +38,6 @@ out/
 
 # 로그 파일
 *.log
+
+# macOS
+.DS_Store
