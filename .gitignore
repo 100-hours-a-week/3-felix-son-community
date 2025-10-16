@@ -9,6 +9,12 @@
 .DS_Store
 Thumbs.db
 
+# Gradle
+.gradle/
+build/
+out/
+bin/
+
 # Backend
 backend/build/
 backend/.gradle/
