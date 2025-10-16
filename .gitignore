@@ -9,11 +9,17 @@
 .DS_Store
 Thumbs.db
 
+# Gradle build artifacts
+.gradle/
+build/
+out/
+
 # Backend
 backend/build/
 backend/.gradle/
 backend/out/
 backend/bin/
+EOF
 
 # Frontend (나중에 추가 시)
 frontend/node_modules/
