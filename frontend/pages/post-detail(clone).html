@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta charset = "UTF-8">
+        <meta name = "viewport" content = "width = device-width, initial-scale = 1.0">
+        <title>게시글 상세 - 커뮤니티</title>
+        <link rel = "stylesheet" href="../css/style.css">
+    </head>
+    <body>
+        <nav class="navbar">
+            <div class="container">
+                <div class="nav-brand">
+                    <h1><a href="../index.html">My Community</a></h1>
+                </div>
+                <ul class="nav-menu" id="navMenu">
+                    <li><a href="../index.html">홈</a></li>
+                    <li><a href="post-list.html">게시글</a></li>
+                    <li id="authNav">
+                        <a href="login.html">로그인</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <main class="main-content">
+            <div class="container">
+                <div id = "postDetail">
+                    <div class="loading">게시글을 불러오는 중...</div>
+                </div>
+            </div>
+        </main>
+
+        <script src ="../js/api.js"></script>
+        <script src ="../js/auth.js"></script>
+        <script>
+            let currentPost = null;
+
+            document.addEventListener('DOMContentLoaded', async() => {
+                authManager.updateUI();
+
+                const urlParams = new URLSearchParams(window.location.search)
+                const postId = urlParams.get('id');
+
+                if(!postId){
+                    showError('게시글을 찾을 수 없습니다.');
+                    window.location.href = 'post-list.html';
+                    return;
+                }
+
+                // 게시글 로드
+                try{
+                    const post = await api.getPost(postId);
+                    currentPost = post;
+                    renderPostDetail(post);
+                }
+                catch(error){
+                    console.error('게시글 로드 실패: ', error);
+                    showError('게시글을 불러오는데 실패했습니다.');
+                    setTimeout(()=>{
+                        location.window.href = 'post-list.html';
+                    }, 2000);
+                }
+            })
+        </script>
+    </body>
+</html>

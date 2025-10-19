@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원가입 - 커뮤니티</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- 네비게이션 바 -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <h1><a href="../index.html">My Community</a></h1>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="../index.html">홈</a></li>
+                <li><a href="post-list.html">게시글</a></li>
+                <li id="authNav">
+                    <!-- 로그인/로그아웃 버튼이 동적으로 표시됩니다 -->
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 메인 콘텐츠 영역 -->
+    <main class="main-content">
+        <div class="container">
+            <div class="auth-container">
+                <h2>회원가입</h2>
+                <form id="registerForm" class="auth-form">
+                    <div class="form-group">
+                        <label for="regUsername">아이디</label>
+                        <input type="text" id="regUsername" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regEmail">이메일</label>
+                        <input type="email" id="regEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regPassword">비밀번호</label>
+                        <input type="password" id="regPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regPasswordConfirm">비밀번호 확인</label>
+                        <input type="password" id="regPasswordConfirm" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">
+                        가입하기
+                    </button>
+                </form>
+                <p class="auth-switch">
+                    이미 계정이 있으신가요? 
+                    <a href="login.html">로그인</a>
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript 파일들 -->
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 네비게이션 업데이트
+            authManager.updateUI();
+
+            // 이미 로그인된 경우 게시글 목록으로 이동
+            if (authManager.isLoggedIn()) {
+                window.location.href = 'post-list.html';
+                return;
+            }
+
+            // 회원가입 폼 이벤트 핸들러
+            const registerForm = document.getElementById('registerForm');
+            registerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const email = document.getElementById('regEmail').value;
+                const password = document.getElementById('regPassword').value;
+                const passwordConfirm = document.getElementById('regPasswordConfirm').value;
+
+                // 비밀번호 확인
+                if (password !== passwordConfirm) {
+                    showError('비밀번호가 일치하지 않습니다.');
+                    return;
+                }
+
+                const success = await authManager.register(email, password, nickname, profileImageUrl);
+                
+                if (success) {
+                    // 회원가입 성공 시 로그인 페이지로 이동
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 1500);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
