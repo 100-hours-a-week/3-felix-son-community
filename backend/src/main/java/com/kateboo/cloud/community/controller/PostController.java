@@ -4,7 +4,7 @@ import com.kateboo.cloud.community.dto.request.PostRequest;
 import com.kateboo.cloud.community.dto.response.LikeResponse;
 import com.kateboo.cloud.community.dto.response.PageResponse;
 import com.kateboo.cloud.community.dto.response.PostResponse;
-import com.kateboo.cloud.community.security.CurrentUser;
+// import com.kateboo.cloud.community.security.CurrentUser;  // 삭제!
 import com.kateboo.cloud.community.service.PostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +13,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;  // 추가!
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -48,7 +49,7 @@ public class PostController {
      */
     @PostMapping
     public ResponseEntity<PostResponse> createPost(
-            @CurrentUser UUID userId,
+            @AuthenticationPrincipal UUID userId,  // 변경!
             @Valid @RequestBody PostRequest request) {
         PostResponse response = postService.createPost(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -59,7 +60,7 @@ public class PostController {
      */
     @PutMapping("/{postId}")
     public ResponseEntity<PostResponse> updatePost(
-            @CurrentUser UUID userId,
+            @AuthenticationPrincipal UUID userId,  // 변경!
             @PathVariable UUID postId,
             @Valid @RequestBody PostRequest request) {
         PostResponse response = postService.updatePost(userId, postId, request);
@@ -71,7 +72,7 @@ public class PostController {
      */
     @DeleteMapping("/{postId}")
     public ResponseEntity<Void> deletePost(
-            @CurrentUser UUID userId,
+            @AuthenticationPrincipal UUID userId,  // 변경!
             @PathVariable UUID postId) {
         postService.deletePost(userId, postId);
         return ResponseEntity.noContent().build();
@@ -82,7 +83,7 @@ public class PostController {
      */
     @PostMapping("/{postId}/like")
     public ResponseEntity<LikeResponse> toggleLike(
-            @CurrentUser UUID userId,
+            @AuthenticationPrincipal UUID userId,  // 변경!
             @PathVariable UUID postId) {
         LikeResponse response = postService.toggleLike(userId, postId);
         return ResponseEntity.ok(response);
