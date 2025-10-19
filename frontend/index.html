@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>커뮤니티 - 홈</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 네비게이션 바 -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <h1><a href="index.html">My Community</a></h1>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html">홈</a></li>
+                <li><a href="pages/post-list.html">게시글</a></li>
+                <li id="authNav">
+                    <!-- 로그인/로그아웃 버튼이 동적으로 표시됩니다 -->
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 메인 콘텐츠 영역 -->
+    <main class="main-content">
+        <div class="container">
+            <section id="home-section">
+                <h2>커뮤니티에 오신 것을 환영합니다!</h2>
+                <p>자유롭게 소통하고 정보를 공유하세요.</p>
+                <div class="welcome-actions">
+                    <a href="pages/post-list.html" class="btn btn-primary">
+                        게시글 보기
+                    </a>
+                    <a href="pages/login.html" class="btn btn-secondary">
+                        시작하기
+                    </a>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- JavaScript 파일들 -->
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        // 페이지 로드 시 네비게이션 업데이트
+        document.addEventListener('DOMContentLoaded', () => {
+            authManager.updateUI();
+        });
+    </script>
+</body>
+</html>

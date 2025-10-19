@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인 - 커뮤니티</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- 네비게이션 바 -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <h1><a href="../index.html">My Community</a></h1>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="../index.html">홈</a></li>
+                <li><a href="post-list.html">게시글</a></li>
+                <li id="authNav">
+                    <!-- 로그인/로그아웃 버튼이 동적으로 표시됩니다 -->
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 메인 콘텐츠 영역 -->
+    <main class="main-content">
+        <div class="container">
+            <div class="auth-container">
+                <h2>로그인</h2>
+                <form id="loginForm" class="auth-form">
+                    <div class="form-group">
+                        <label for="loginEmail">이메일</label>
+                        <input type="email" id="loginEmail" required placeholder="example@email.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">비밀번호</label>
+                        <input type="password" id="loginPassword" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">
+                        로그인
+                    </button>
+                </form>
+                <p class="auth-switch">
+                    계정이 없으신가요? 
+                    <a href="register.html">회원가입</a>
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript 파일들 -->
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 네비게이션 업데이트
+            authManager.updateUI();
+
+            // 이미 로그인된 경우 게시글 목록으로 이동
+            if (authManager.isLoggedIn()) {
+                window.location.href = 'post-list.html';
+                return;
+            }
+
+            // 로그인 폼 이벤트 핸들러
+            const loginForm = document.getElementById('loginForm');
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+
+                const success = await authManager.login(email, password);
+                
+                if (success) {
+                    // 로그인 성공 시 게시글 목록으로 이동
+                    window.location.href = 'post-list.html';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

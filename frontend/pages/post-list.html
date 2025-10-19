@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>게시글 목록 - 커뮤니티</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- 네비게이션 바 -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <h1><a href="../index.html">My Community</a></h1>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="../index.html">홈</a></li>
+                <li><a href="post-list.html">게시글</a></li>
+                <li id="authNav">
+                    <!-- 로그인/로그아웃 버튼이 동적으로 표시됩니다 -->
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 메인 콘텐츠 영역 -->
+    <main class="main-content">
+        <div class="container">
+            <div class="section-header">
+                <h2>게시글 목록</h2>
+                <a href="write.html" class="btn btn-primary" id="writePostBtn" style="display: none;">
+                    글쓰기
+                </a>
+            </div>
+            
+            <!-- 전체 게시글 수 정보 -->
+            <div id="pageInfo" class="page-info"></div>
+            
+            <!-- 게시글 목록 -->
+            <div id="postList" class="post-list">
+                <!-- 게시글이 동적으로 로드됩니다 -->
+            </div>
+
+            <!-- 로딩 인디케이터 -->
+            <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+                <div class="loading-spinner"></div>
+                <p>게시글을 불러오는 중...</p>
+            </div>
+
+            <!-- 마지막 페이지 메시지 -->
+            <div id="endMessage" class="end-message" style="display: none;">
+                <p>모든 게시글을 불러왔습니다 ✓</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript 파일들 -->
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        // 전역 변수
+        let currentPage = 0;
+        let isLoading = false;
+        let isLastPage = false;
+        let totalElements = 0;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 네비게이션 업데이트
+            authManager.updateUI();
+
+            // 초기 게시글 로드
+            await loadPosts();
+
+            // 스크롤 이벤트 리스너 등록
+            window.addEventListener('scroll', handleScroll);
+        });
+
+        // 스크롤 이벤트 핸들러
+        function handleScroll() {
+            // 이미 로딩 중이거나 마지막 페이지면 중단
+            if (isLoading || isLastPage) return;
+
+            // 페이지 하단 근처 도달 확인 (하단 100px 이내)
+            const scrollPosition = window.innerHeight + window.scrollY;
+            const pageHeight = document.documentElement.scrollHeight;
+
+            if (scrollPosition >= pageHeight - 100) {
+                loadPosts();
+            }
+        }
+
+        // 게시글 로드 함수
+        async function loadPosts() {
+            // 중복 요청 방지
+            if (isLoading || isLastPage) return;
+
+            try {
+                isLoading = true;
+                showLoadingIndicator();
+
+                const response = await api.getPosts(currentPage, 10);
+                
+                // 첫 로드 시 전체 게시글 수 표시
+                if (currentPage === 0) {
+                    totalElements = response.totalElements;
+                    displayPageInfo(response);
+                }
+
+                const posts = response.content;
+
+                // 게시글이 없는 경우 (첫 페이지)
+                if (currentPage === 0 && posts.length === 0) {
+                    const postList = document.getElementById('postList');
+                    postList.innerHTML = '<div class="no-posts">게시글이 없습니다.</div>';
+                    hideLoadingIndicator();
+                    isLastPage = true;
+                    return;
+                }
+
+                // 게시글 렌더링 (기존 목록에 추가)
+                appendPosts(posts);
+
+                // 마지막 페이지 체크
+                if (response.last) {
+                    isLastPage = true;
+                    showEndMessage();
+                } else {
+                    currentPage++; // 다음 페이지 준비
+                }
+
+            } catch (error) {
+                console.error('게시글 로드 실패:', error);
+                
+                if (currentPage === 0) {
+                    const postList = document.getElementById('postList');
+                    postList.innerHTML = '<div class="error-message">게시글을 불러오는데 실패했습니다.</div>';
+                }
+            } finally {
+                isLoading = false;
+                hideLoadingIndicator();
+            }
+        }
+
+        // 게시글을 목록에 추가
+        function appendPosts(posts) {
+            const postList = document.getElementById('postList');
+            
+            const postsHTML = posts.map(post => {
+                // 안전하게 user 데이터 접근
+                const user = post.user || {};
+                const nickname = user.nickname || '익명';
+                const profileImageUrl = user.profileImageUrl;
+                const stats = post.stats || { viewsCount: 0, commentCount: 0, likesCount: 0 };
+                
+                return `
+                    <article class="post-card" onclick="location.href='post-detail.html?id=${post.postId}'">
+                        <div class="post-header">
+                            <div class="post-author-info">
+                                ${profileImageUrl ? 
+                                    `<img src="${profileImageUrl}" 
+                                          alt="${escapeHtml(nickname)}" 
+                                          class="author-avatar-small"
+                                          onerror="this.style.display='none'">` 
+                                    : '<div class="author-avatar-small default-avatar">👤</div>'}
+                                <span class="author-nickname">${escapeHtml(nickname)}</span>
+                            </div>
+                            <span class="post-date">${formatDate(post.createdAt)}</span>
+                        </div>
+                        <h3>${escapeHtml(post.title || '제목 없음')}</h3>
+                        <p class="post-preview">
+                            ${escapeHtml(getPreview(post.body))}
+                        </p>
+                        <div class="post-stats">
+                            <span>👁️ ${stats.viewsCount}</span>
+                            <span>💬 ${stats.commentCount}</span>
+                            <span>❤️ ${stats.likesCount}</span>
+                        </div>
+                    </article>
+                `;
+            }).join('');
+
+            // 첫 페이지면 교체, 아니면 추가
+            if (currentPage === 0) {
+                postList.innerHTML = postsHTML;
+            } else {
+                postList.insertAdjacentHTML('beforeend', postsHTML);
+            }
+        }
+
+        // 전체 게시글 수 표시
+        function displayPageInfo(response) {
+            const pageInfo = document.getElementById('pageInfo');
+            pageInfo.innerHTML = `
+                <span>전체 게시글: ${response.totalElements}개</span>
+            `;
+        }
+
+        // 로딩 인디케이터 표시
+        function showLoadingIndicator() {
+            const indicator = document.getElementById('loadingIndicator');
+            indicator.style.display = 'block';
+        }
+
+        // 로딩 인디케이터 숨김
+        function hideLoadingIndicator() {
+            const indicator = document.getElementById('loadingIndicator');
+            indicator.style.display = 'none';
+        }
+
+        // 마지막 페이지 메시지 표시
+        function showEndMessage() {
+            const endMessage = document.getElementById('endMessage');
+            endMessage.style.display = 'block';
+        }
+
+        // 유틸리티 함수들
+        function getPreview(content, maxLength = 150) {
+            if (!content) return '';
+            return content.length > maxLength 
+                ? content.substring(0, maxLength) + '...' 
+                : content;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            
+            const date = new Date(dateString);
+            const now = new Date();
+            const diff = now - date;
+
+            // 1분 미만
+            if (diff < 60000) {
+                return '방금 전';
+            }
+            // 1시간 미만
+            if (diff < 3600000) {
+                return `${Math.floor(diff / 60000)}분 전`;
+            }
+            // 1일 미만
+            if (diff < 86400000) {
+                return `${Math.floor(diff / 3600000)}시간 전`;
+            }
+            // 7일 미만
+            if (diff < 604800000) {
+                return `${Math.floor(diff / 86400000)}일 전`;
+            }
+
+            // 그 이상은 날짜 표시
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+    </script>
+</body>
+</html>

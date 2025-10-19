@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>게시글 상세 - 커뮤니티</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- 네비게이션 바 -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <h1><a href="../index.html">My Community</a></h1>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="../index.html">홈</a></li>
+                <li><a href="post-list.html">게시글</a></li>
+                <li id="authNav">
+                    <!-- 로그인/로그아웃 버튼이 동적으로 표시됩니다 -->
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 메인 콘텐츠 영역 -->
+    <main class="main-content">
+        <div class="container">
+            <div id="postDetail">
+                <div class="loading">게시글을 불러오는 중...</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript 파일들 -->
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        let currentPost = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 네비게이션 업데이트
+            authManager.updateUI();
+
+            // URL에서 게시글 ID 가져오기
+            const urlParams = new URLSearchParams(window.location.search);
+            const postId = urlParams.get('id');
+
+            if (!postId) {
+                showError('게시글을 찾을 수 없습니다.');
+                window.location.href = 'post-list.html';
+                return;
+            }
+
+            // 게시글 로드
+            try {
+                const post = await api.getPost(postId);
+                currentPost = post;
+                renderPostDetail(post);
+            } catch (error) {
+                console.error('게시글 로드 실패:', error);
+                showError('게시글을 불러오는데 실패했습니다.');
+                setTimeout(() => {
+                    window.location.href = 'post-list.html';
+                }, 2000);
+            }
+        });
+
+        function renderPostDetail(post) {
+            const postDetail = document.getElementById('postDetail');
+            const currentUser = authManager.getCurrentUser();
+            
+            // 안전하게 데이터 접근
+            const user = post.user || {};
+            const stats = post.stats || { viewsCount: 0, commentCount: 0, likesCount: 0 };
+            const images = post.images || [];
+            const nickname = user.nickname || '익명';
+            const profileImageUrl = user.profileImageUrl;
+            
+            // 작성자 확인: userId 또는 nickname으로 비교
+            const isAuthor = currentUser && 
+                            (currentUser.userId === user.userId || 
+                             currentUser.nickname === nickname);
+
+            postDetail.innerHTML = `
+                <div class="post-detail-container">
+                    <div class="post-detail-header">
+                        <h2>${escapeHtml(post.title || '제목 없음')}</h2>
+                        <div class="post-detail-meta">
+                            <div class="post-author-info">
+                                ${profileImageUrl ? 
+                                    `<img src="${profileImageUrl}" 
+                                          alt="${escapeHtml(nickname)}" 
+                                          class="author-avatar-large"
+                                          onerror="this.style.display='none'">` 
+                                    : ''}
+                                <span class="author-name">${escapeHtml(nickname)}</span>
+                            </div>
+                            <div class="post-date-info">
+                                <span>작성: ${formatDate(post.createdAt)}</span>
+                                ${post.updatedAt ? `<span>수정: ${formatDate(post.updatedAt)}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="post-detail-stats">
+                            <span>👁️ 조회 ${stats.viewsCount}</span>
+                            <span>💬 댓글 ${stats.commentCount}</span>
+                            <span>❤️ 좋아요 ${stats.likesCount}</span>
+                        </div>
+                    </div>
+
+                    ${images.length > 0 ? `
+                        <div class="post-detail-images">
+                            ${images.map(img => `
+                                <img src="${img.imageUrl}" 
+                                     alt="게시글 이미지" 
+                                     class="post-detail-image"
+                                     onerror="this.style.display='none'">
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                    
+                    <div class="post-detail-content">
+                        ${escapeHtml(post.body || '').replace(/\n/g, '<br>')}
+                    </div>
+                    
+                    <div class="post-detail-actions">
+                        <a href="post-list.html" class="btn btn-secondary">
+                            목록으로
+                        </a>
+                        ${isAuthor ? `
+                            <button class="btn btn-primary" onclick="editPost('${post.postId}')">
+                                수정
+                            </button>
+                            <button class="btn btn-danger" onclick="deletePost('${post.postId}')">
+                                삭제
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        async function editPost(id) {
+            if (!authManager.checkAuth()) return;
+            
+            // write.html로 이동 (수정 모드)
+            window.location.href = `write.html?id=${id}`;
+        }
+
+        async function deletePost(id) {
+            if (!authManager.checkAuth()) return;
+
+            if (!confirm('정말 삭제하시겠습니까?')) return;
+
+            try {
+                await api.deletePost(id);
+                showSuccess('게시글이 삭제되었습니다.');
+                setTimeout(() => {
+                    window.location.href = 'post-list.html';
+                }, 1000);
+            } catch (error) {
+                console.error('게시글 삭제 실패:', error);
+                showError(error.message || '게시글 삭제에 실패했습니다.');
+            }
+        }
+
+        // 유틸리티 함수들
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            
+            const date = new Date(dateString);
+            const now = new Date();
+            const diff = now - date;
+
+            if (diff < 60000) return '방금 전';
+            if (diff < 3600000) return `${Math.floor(diff / 60000)}분 전`;
+            if (diff < 86400000) return `${Math.floor(diff / 3600000)}시간 전`;
+            if (diff < 604800000) return `${Math.floor(diff / 86400000)}일 전`;
+
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day} ${hours}:${minutes}`;
+        }
+    </script>
+</body>
+</html>
